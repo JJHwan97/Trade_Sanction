@@ -2,6 +2,7 @@ library(dplyr)
 library(tidyverse)
 library(countrycode)
 library(readr)
+library(readxl)
 
 data1_clean <- read_csv("E:/aa/data1_clean.csv")
 
@@ -96,6 +97,14 @@ url <- "https://mgmt.wharton.upenn.edu/wp-content/uploads/2017/02/POLCON_2017.xl
 veto <- rio::import(file = url,which = 1) %>% 
   glimpse()
 
+url <- "http://www.systemicpeace.org/inscr/p5v2018.xls"
+dem5 <- rio::import(file = url,which = 1) %>% 
+  glimpse()
+
+dem5 <- dem5 %>% dplyr::select(ccode, year, polity)
+dem5$ISOcountry <- dem5$ccode %>% countrycode(., origin = 'p4n', destination = 'iso3n')
+dem5 <- dem5 %>% select(!c(ccode))
+
 library(wbstats)
 GDP<- wb_data(indicator = "NY.GDP.MKTP.CD")
 
@@ -112,13 +121,14 @@ colnames(GDP)[2] <- 'GDP'
 GDP <- drop_na(GDP)
 cinc <- drop_na(cinc)
 veto <- drop_na(veto)
+dem5 <- drop_na(dem5)
 
 ties <- ties %>% filter(startyear > 1962)
 
-ties <- ties %>% dplyr::select(caseid, startyear, endyear, sender1, institution, targetstate, 
+ties <- ties %>% dplyr::select(caseid, startyear, startmonth, startday, endyear, sender1, institution, targetstate, 
                         targetinstitution, threat, sanctiontypethreat, othersanctiontypethreatened, 
-                        sanctiontype, imposition, sancimpositionstartyear, sanctiontype,
-                        othersanctiontype, finaloutcome)
+                        sanctiontype, imposition, sancimpositionstartyear, sancimpositionstartmonth, sancimpositionstartday,
+                        sanctiontype, othersanctiontype, finaloutcome)
 temp1 <- ties$sender1
 temp2 <- ties$sender1 %>% countrycode(., origin = 'cown', destination = 'iso3n')
 temp2[temp1 == 260] <- 280
@@ -151,6 +161,7 @@ ties <- left_join(ties, final.constraint)
 ties <- left_join(ties, veto)
 ties <- left_join(ties, cinc)
 ties <- left_join(ties, GDP)
+ties <- left_join(ties, dem5)
 
 colnames(ties)[colnames(ties)=="ISOcountry"] <- "sender1ISO"
 colnames(ties)[colnames(ties)=="ccode"] <- "sender1"
@@ -158,6 +169,7 @@ colnames(ties)[colnames(ties)=="constraint"] <- "senderconstraint"
 colnames(ties)[colnames(ties)=="polconiii"] <- "senderveto"
 colnames(ties)[colnames(ties)=="cinc"] <- "sendercinc"
 colnames(ties)[colnames(ties)=="GDP"] <- "sendergdp"
+colnames(ties)[colnames(ties)=="polity"] <- "senderpolity"
 
 
 colnames(ties)[colnames(ties)=="targetstateISO"] <- "ISOcountry"
@@ -167,6 +179,7 @@ ties <- left_join(ties, final.constraint)
 ties <- left_join(ties, veto)
 ties <- left_join(ties, cinc)
 ties <- left_join(ties, GDP)
+ties <- left_join(ties, dem5)
 
 colnames(ties)[colnames(ties)=="ISOcountry"] <- "targetstateISO"
 colnames(ties)[colnames(ties)=="ccode"] <- "targetstate"
@@ -174,6 +187,7 @@ colnames(ties)[colnames(ties)=="constraint"] <- "targetconstraint"
 colnames(ties)[colnames(ties)=="polconiii"] <- "targetveto"
 colnames(ties)[colnames(ties)=="cinc"] <- "targetcinc"
 colnames(ties)[colnames(ties)=="GDP"] <- "targetgdp"
+colnames(ties)[colnames(ties)=="polity"] <- "targetpolity"
 
 ties <- ties %>% dplyr::select(!year)
 
@@ -185,6 +199,7 @@ ties <- left_join(ties, final.constraint)
 ties <- left_join(ties, veto)
 ties <- left_join(ties, cinc)
 ties <- left_join(ties, GDP)
+ties <- left_join(ties, dem5)
 
 colnames(ties)[colnames(ties)=="ISOcountry"] <- "sender1ISO"
 colnames(ties)[colnames(ties)=="ccode"] <- "sender1"
@@ -192,6 +207,7 @@ colnames(ties)[colnames(ties)=="constraint"] <- "senderconstraint_imposition"
 colnames(ties)[colnames(ties)=="polconiii"] <- "senderveto_imposition"
 colnames(ties)[colnames(ties)=="cinc"] <- "sendercinc_imposition"
 colnames(ties)[colnames(ties)=="GDP"] <- "sendergdp_imposition"
+colnames(ties)[colnames(ties)=="polity"] <- "senderpolity_imposition"
 
 colnames(ties)[colnames(ties)=="targetstateISO"] <- "ISOcountry"
 colnames(ties)[colnames(ties)=="targetstate"] <- "ccode"
@@ -200,6 +216,7 @@ ties <- left_join(ties, final.constraint)
 ties <- left_join(ties, veto)
 ties <- left_join(ties, cinc)
 ties <- left_join(ties, GDP)
+ties <- left_join(ties, dem5)
 
 colnames(ties)[colnames(ties)=="ISOcountry"] <- "targetstateISO"
 colnames(ties)[colnames(ties)=="ccode"] <- "targetstate"
@@ -207,6 +224,8 @@ colnames(ties)[colnames(ties)=="constraint"] <- "targetconstraint_imposition"
 colnames(ties)[colnames(ties)=="polconiii"] <- "targetveto_imposition"
 colnames(ties)[colnames(ties)=="cinc"] <- "targetcinc_imposition"
 colnames(ties)[colnames(ties)=="GDP"] <- "targetgdp_imposition"
+colnames(ties)[colnames(ties)=="polity"] <- "targetpolity_imposition"
+
 ties <- ties %>% dplyr::select(!year)
 
 alliance <- read_csv("E:/Economic Sanctions/alliance/alliance_v4.1_by_directed_yearly.csv")
@@ -356,6 +375,7 @@ ties[is.na(ties$portion),"portion"] <- 0
 colnames(ties)[colnames(ties)=="portion"] <- "target/sender_imposition"
 ties <- ties %>% dplyr::select(!year)
 
+##war
 war <- read_csv("E:/Economic Sanctions/dyadic_mid_4.01/directed_dyadic_war.csv")
 war <- war[,c(4,5,12)]
 war$mid <- 1
@@ -385,12 +405,52 @@ colnames(ties)[colnames(ties)=="mid"] <- "mid_imposition"
 ties <- ties %>% dplyr::select(!year)
 
 sanctiontype <- read_csv("E:/Economic Sanctions/sanctiontype.csv")
-
+sanctiontype <- sanctiontype$trade %>% as.data.frame
+colnames(sanctiontype) <- "impositiontype"
 sanctiontype_threat <- read_csv("E:/Economic Sanctions/sanctiontype_threat.csv")
+sanctiontype_threat <- sanctiontype_threat$threattype %>% as.data.frame
+colnames(sanctiontype_threat) <- "threattype"
 
 ties<- cbind(ties, sanctiontype)
 
 ties<-cbind(ties, sanctiontype_threat)
+
+ties$datestart <- paste0(ties$startyear, "-", ties$startmonth , "-" ,ties$startday) %>% as.Date()
+# 
+# ties$yearsince <- format(as.Date(ties$datestart, format="%Y/-%m/-%d"),"%Y") %>% as.numeric
+# 
+# ties$sancimpositionstartyear <- ties$sancimpositionstartyear %>% as.numeric()
+# ties$sancimpositionstartday <- ties$sancimpositionstartday %>% as.numeric()
+
+ties$date_imposition <- paste0(ties$sancimpositionstartyear,"-",ties$sancimpositionstartmonth,"-",ties$sancimpositionstartday) %>% as.Date()
+# ties$date_imposition <- format(as.Date(ties$date_imposition, format="%Y/-%m/-%d"),"%Y")
+
+ties <- ties %>% drop_na(sender1)
+
+for (i in 1 : length(unique(ties$sender1))){
+  j <- unique(ties$sender1)[i]
+  temp2 <- ties %>% filter(sender1 == j)
+  allyear <- temp2$date_imposition
+  temp2$lastimposition <- NA
+  for (k in 1:nrow(temp2)){
+    sample <- (allyear - temp2$datestart[k]) %>% as.numeric() %>% as.data.frame() 
+    sample_days <- sample[sample<0]
+    if(which.min(sample_days) %>% length() != 0){
+      temp2$lastimposition[k] <- (-sample_days[which.max(sample_days)]) %>% min()
+    }else{
+      next
+    }}
+  if (i ==1){
+    a <- temp2
+  }else{
+    a <- rbind(a,temp2)
+  }}
+
+a$sancimpositionstartyear <- a$sancimpositionstartyear %>% as.numeric()
+
+ties <- left_join(ties, a)  
+ 
+ties$timesince <- ties$yearsince - ties$lastimposition
 
 write.csv(ties, "E:/Economic Sanctions/ties.csv")
 
@@ -400,4 +460,4 @@ top <- ties[order(ties$senderconstraint),] %>%
 top$sendername <- top$sender1 %>% countrycode(., origin = 'cown', destination = 'country.name')
 top$targetname <- top$targetstate %>% countrycode(., origin = 'cown', destination = 'country.name')
 
-write.csv(top, "E:/Economic Sanctions/top.csv")
+# write.csv(top, "E:/Economic Sanctions/top.csv")
