@@ -4,59 +4,59 @@ library(countrycode)
 library(readr)
 library(readxl)
 
-data1_clean <- read_csv("E:/aa/data1_clean.csv")
+data2_clean <- read_csv("E:/aa/data2_clean.csv")
 
-import.full <- data1_clean[,1:9]
+export.full <- data2_clean[,1:8]
 
-remove(data1_clean)
+remove(data2_clean)
 
 country <- read_excel("E:/Economic Sanctions/UN Comtrade Country List.xls")[,c(1:2)]
 
 country[country[,1] == 384,2] <- "Cote d'Ivoire"
 country[country[,1] == 531,2] <- "Curacao"
 
-import.full[import.full[,8] == "C척te d'Ivoire",8] <- "Cote d'Ivoire"
-import.full[import.full[,9] == "C척te d'Ivoire",9] <- "Cote d'Ivoire"
+export.full[export.full[,7] == "C척te d'Ivoire",7] <- "Cote d'Ivoire"
+export.full[export.full[,8] == "C척te d'Ivoire",8] <- "Cote d'Ivoire"
 
-import.full[import.full[,8] == "Cura챌ao",8] <- "Curacao"
-import.full[import.full[,9] == "Cura챌ao",9] <- "Curacao"
+export.full[export.full[,7] == "Cura챌ao",7] <- "Curacao"
+export.full[export.full[,8] == "Cura챌ao",8] <- "Curacao"
 
-colnames(country) <- c("PartnerISO",import.full %>% colnames() %>% .[8])
+colnames(country) <- c("PartnerISO",export.full %>% colnames() %>% .[7])
 
-import.full <- left_join(import.full, country)
+export.full <- left_join(export.full, country)
 
-colnames(country) <- c("ReporterISO",import.full %>% colnames() %>% .[9])
+colnames(country) <- c("ReporterISO",export.full %>% colnames() %>% .[8])
 
-import.full <- left_join(import.full, country)
+export.full <- left_join(export.full, country)
 
-import.full <- import.full %>% filter(Trade.Value..US.. != 0)
+export.full <- export.full %>% filter(Trade.Value..US.. != 0)
 
-import.full$weight <- 100/log(import.full$Trade.Value..US..+1)  
+export.full$weight <- 100/log(export.full$Trade.Value..US..+1)  
 
-import.full <- import.full[,c(1,10:12)]
+export.full <- export.full[,c(1,9:11)]
 
-import.full <- import.full %>% drop_na()
+export.full <- export.full %>% drop_na()
 
-import.full[import.full[,3] == 841,3] <- 840
-import.full[import.full[,2] == 841,2] <- 840
+export.full[export.full[,3] == 841,3] <- 840
+export.full[export.full[,2] == 841,2] <- 840
 
-import.full[import.full[,3] == 842,3] <- 840
-import.full[import.full[,2] == 842,2] <- 840
+export.full[export.full[,3] == 842,3] <- 840
+export.full[export.full[,2] == 842,2] <- 840
 
-import.full[import.full[,3] == 699,3] <- 356
-import.full[import.full[,2] == 699,2] <- 356
+export.full[export.full[,3] == 699,3] <- 356
+export.full[export.full[,2] == 699,2] <- 356
 
-import.full[import.full[,3] == 568,3] <- 492
-import.full[import.full[,2] == 568,2] <- 492
+export.full[export.full[,3] == 568,3] <- 492
+export.full[export.full[,2] == 568,2] <- 492
 
-import.full[import.full[,3] == 810,3] <- 643
-import.full[import.full[,2] == 810,2] <- 643
+export.full[export.full[,3] == 810,3] <- 643
+export.full[export.full[,2] == 810,2] <- 643
 
 
 library(igraph)
 
-for (i in import.full$Year %>% unique()){
-  temp <- import.full %>% filter(Year == i)
+for (i in export.full$Year %>% unique()){
+  temp <- export.full %>% filter(Year == i)
   temp <- drop_na(temp)
   temp <- temp[,2:4]
   # assign(paste0("import",i), temp)
@@ -66,12 +66,12 @@ for (i in import.full$Year %>% unique()){
   constraint.temp <- constraint.temp %>% as.data.frame()
   colnames(constraint.temp) <- i
   constraint.temp <- rownames_to_column(constraint.temp, var = "ISOcountry")
-  assign(paste0("constraint","import",i), constraint.temp)
+  assign(paste0("constraint","export",i), constraint.temp)
 }
 
-for (i in import.full$Year %>% unique()){
-  temp <- get(paste0("constraint","import",i))
-  if (i == 1962){
+for (i in export.full$Year %>% unique()){
+  temp <- get(paste0("constraint","export",i))
+  if (i == 1963){
     final.constraint <- temp
   }else{
     final.constraint <- full_join(final.constraint , temp)
@@ -126,9 +126,9 @@ dem5 <- drop_na(dem5)
 ties <- ties %>% filter(startyear > 1962)
 
 ties <- ties %>% dplyr::select(caseid, startyear, startmonth, startday, endyear, sender1, institution, targetstate, 
-                        targetinstitution, threat, sanctiontypethreat, othersanctiontypethreatened, 
-                        sanctiontype, imposition, sancimpositionstartyear, sancimpositionstartmonth, sancimpositionstartday,
-                        sanctiontype, othersanctiontype, finaloutcome)
+                               targetinstitution, threat, sanctiontypethreat, othersanctiontypethreatened, 
+                               sanctiontype, imposition, sancimpositionstartyear, sancimpositionstartmonth, sancimpositionstartday,
+                               sanctiontype, othersanctiontype, finaloutcome)
 temp1 <- ties$sender1
 temp2 <- ties$sender1 %>% countrycode(., origin = 'cown', destination = 'iso3n')
 temp2[temp1 == 260] <- 280
@@ -261,62 +261,67 @@ ties[is.na(ties$aliance_imposition),"aliance_imposition"] <- 0
 
 ties <- ties %>% dplyr::select(!year)
 
-data1_clean <- read_csv("E:/aa/data1_clean.csv")
+data2_clean <- read_csv("E:/aa/data2_clean.csv")
 
-import.full <- data1_clean[,1:9]
+export.full <- data2_clean[,1:8]
 
-remove(data1_clean)
+remove(data2_clean)
 
-import.full[import.full[,8] == "C척te d'Ivoire",8] <- "Cote d'Ivoire"
-import.full[import.full[,9] == "C척te d'Ivoire",9] <- "Cote d'Ivoire"
+country <- read_excel("E:/Economic Sanctions/UN Comtrade Country List.xls")[,c(1:2)]
 
-import.full[import.full[,8] == "Cura챌ao",8] <- "Curacao"
-import.full[import.full[,9] == "Cura챌ao",9] <- "Curacao"
+country[country[,1] == 384,2] <- "Cote d'Ivoire"
+country[country[,1] == 531,2] <- "Curacao"
 
-colnames(country) <- c("PartnerISO",import.full %>% colnames() %>% .[8])
+export.full[export.full[,7] == "C척te d'Ivoire",7] <- "Cote d'Ivoire"
+export.full[export.full[,8] == "C척te d'Ivoire",8] <- "Cote d'Ivoire"
 
-import.full <- left_join(import.full, country)
+export.full[export.full[,7] == "Cura챌ao",7] <- "Curacao"
+export.full[export.full[,8] == "Cura챌ao",8] <- "Curacao"
 
-colnames(country) <- c("ReporterISO",import.full %>% colnames() %>% .[9])
+colnames(country) <- c("PartnerISO",export.full %>% colnames() %>% .[7])
 
-import.full <- left_join(import.full, country)
+export.full <- left_join(export.full, country)
 
-import.full <- import.full %>% filter(Trade.Value..US.. != 0)
+colnames(country) <- c("ReporterISO",export.full %>% colnames() %>% .[8])
 
-import.full$weight <- 100/log(import.full$Trade.Value..US..+1)  
+export.full <- left_join(export.full, country)
 
-import.full <- import.full[,c(1,10,11,6)]
+export.full <- export.full %>% filter(Trade.Value..US.. != 0)
 
-import.full <- import.full %>% drop_na()
+export.full$weight <- 100/log(export.full$Trade.Value..US..+1)  
 
-import.full[import.full[,3] == 841,3] <- 840
-import.full[import.full[,2] == 841,2] <- 840
+export.full <- export.full[,c(1,9:11)]
 
-import.full[import.full[,3] == 842,3] <- 840
-import.full[import.full[,2] == 842,2] <- 840
+export.full <- export.full %>% drop_na()
 
-import.full[import.full[,3] == 699,3] <- 356
-import.full[import.full[,2] == 699,2] <- 356
+export.full[export.full[,3] == 841,3] <- 840
+export.full[export.full[,2] == 841,2] <- 840
 
-import.full[import.full[,3] == 568,3] <- 492
-import.full[import.full[,2] == 568,2] <- 492
+export.full[export.full[,3] == 842,3] <- 840
+export.full[export.full[,2] == 842,2] <- 840
 
-import.full[import.full[,3] == 810,3] <- 643
-import.full[import.full[,2] == 810,2] <- 643
+export.full[export.full[,3] == 699,3] <- 356
+export.full[export.full[,2] == 699,2] <- 356
 
-colnames(import.full)[4]<-"trade"
+export.full[export.full[,3] == 568,3] <- 492
+export.full[export.full[,2] == 568,2] <- 492
 
-import.full.summarize <- import.full %>% 
+export.full[export.full[,3] == 810,3] <- 643
+export.full[export.full[,2] == 810,2] <- 643
+
+colnames(export.full)[4]<-"trade"
+
+export.full.summarize <- export.full %>% 
   group_by(PartnerISO, ReporterISO, Year) %>%
   summarize(trade_sum = sum(trade))
 
-import.full.summarize.country <- import.full %>% 
+export.full.summarize.country <- export.full %>% 
   group_by(ReporterISO, Year) %>%
   summarize(trade_sum = sum(trade))
 
-colnames(import.full.summarize.country)[3] <- "trade_sum_full"
+colnames(export.full.summarize.country)[3] <- "trade_sum_full"
 
-trade.portion <- left_join(import.full.summarize, import.full.summarize.country)
+trade.portion <- left_join(export.full.summarize, export.full.summarize.country)
 trade.portion$portion <- trade.portion$trade_sum/trade.portion$trade_sum_full
 colnames(trade.portion)[3]<-"year"
 trade.portion <- trade.portion[,c(1,2,3,6)]
@@ -419,17 +424,18 @@ ties$datestart <- paste0(ties$startyear, "-", ties$startmonth , "-" ,ties$startd
 # 
 # ties$yearsince <- format(as.Date(ties$datestart, format="%Y/-%m/-%d"),"%Y") %>% as.numeric
 # 
-# ties$sancimpositionstartyear <- ties$sancimpositionstartyear %>% as.numeric()
-# ties$sancimpositionstartday <- ties$sancimpositionstartday %>% as.numeric()
+ties$sancimpositionstartyear <- ties$sancimpositionstartyear %>% as.numeric()
+ties$sancimpositionstartday <- ties$sancimpositionstartday %>% as.numeric()
+
+# ties$date_imposition <- format(as.Date(ties$date_imposition, format="%Y/-%m/-%d"),"%Y")
+
+ties <- ties %>% drop_na(sender1)
 
 ties$date_imposition <- paste0(ties$sancimpositionstartyear,"-",ties$sancimpositionstartmonth,"-",ties$sancimpositionstartday)
-# ties$date_imposition <- format(as.Date(ties$date_imposition, format="%Y/-%m/-%d"),"%Y")
 
 ties <- arrange(ties, sancimpositionstartyear)
 
-ties$date_imposition  <- ties$date_imposition  %>% as.Date()
-
-ties <- ties %>% drop_na(sender1)
+ties$date_imposition <- ties$date_imposition %>% as.Date()
 
 for (i in 1 : length(unique(ties$sender1))){
   j <- unique(ties$sender1)[i]
@@ -453,10 +459,10 @@ for (i in 1 : length(unique(ties$sender1))){
 a$sancimpositionstartyear <- a$sancimpositionstartyear %>% as.numeric()
 
 ties <- left_join(ties, a)  
- 
+
 # ties$timesince <- ties$yearsince - ties$lastimposition
 
-write.csv(ties, "E:/Economic Sanctions/ties.csv")
+write.csv(ties, "E:/Economic Sanctions/ties_export.csv")
 
 top <- ties[order(ties$senderconstraint),] %>%
   .[,c("startyear","sender1","senderconstraint","targetstate","targetconstraint")]
