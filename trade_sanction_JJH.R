@@ -465,3 +465,87 @@ top$sendername <- top$sender1 %>% countrycode(., origin = 'cown', destination = 
 top$targetname <- top$targetstate %>% countrycode(., origin = 'cown', destination = 'country.name')
 
 # write.csv(top, "E:/Economic Sanctions/top.csv")
+
+i = 1989
+temp <- import.full %>% filter(Year == i)
+temp <- drop_na(temp)
+temp <- temp[,2:4]
+
+temp_graph <- graph_from_data_frame(temp,directed = TRUE)
+
+
+temp_forbind <- temp[,c(2,1,3)]
+
+temp_dyad <- rbind(temp, temp_forbind)
+
+colnames(temp_dyad)[1:2] <- c("V1","V2")
+
+temp_1989 <- make_ego_graph(temp_graph, order = 1, nodes = "840", mode = c("all"), mindist = 0)
+temp_1989 <- temp_1989[[1]] %>% as_edgelist() %>% as.data.frame()
+temp_1989[,1] <- temp_1989[,1] %>% as.numeric()
+temp_1989[,2] <- temp_1989[,2] %>% as.numeric()
+
+temp_1989_840 <- left_join(temp_1989, temp_dyad)
+
+plot_ego_1989 <- graph_from_data_frame(temp_1989_840)
+
+plot(plot_ego_1989, layout= layout_with_fr, 
+     edge.width=rank(-E(plot_ego_1989)$weight)*0.00005, edge.arrow.size= E(plot_ego_1989)$weight * 0.005)
+
+i = 1990
+temp <- import.full %>% filter(Year == i)
+temp <- drop_na(temp)
+temp <- temp[,2:4]
+
+temp_graph <- graph_from_data_frame(temp,directed = TRUE)
+
+temp_forbind <- temp[,c(2,1,3)]
+
+temp_dyad <- rbind(temp, temp_forbind)
+
+colnames(temp_dyad)[1:2] <- c("V1","V2")
+
+temp_1990 <- make_ego_graph(temp_graph, order = 2, nodes = "840", mode = c("all"), mindist = 0)
+temp_1990 <- temp_1990[[1]] %>% as_edgelist() %>% as.data.frame()
+temp_1990[,1] <- temp_1990[,1] %>% as.numeric()
+temp_1990[,2] <- temp_1990[,2] %>% as.numeric()
+
+temp_1990_840 <- left_join(temp_1990, temp_dyad)
+
+##
+
+temp_1990_840 <- temp_1990_840[rank(temp_1990_840$weight) < 500,]
+
+temp_1989_840 <- temp_1989_840[rank(temp_1989_840$weight) < 500,]
+
+plot_ego_1989 <- graph_from_data_frame(temp_1989_840)
+
+plot_ego_1990 <- graph_from_data_frame(temp_1990_840)
+
+plot(plot_ego_1989, vertex.size=VComponent_Size1989, layout= layout_with_kk, vertex.color = VComponent1989,
+     edge.width=rank(-E(plot_ego_1989)$weight)*0.008, edge.arrow.size= E(plot_ego_1989)$weight * 0.005, edge.curved=.1)
+
+plot(plot_ego_1990, vertex.size=VComponent_Size1990, layout= layout_with_kk, vertex.color = VComponent1990,
+     edge.width= rank(E(plot_ego_1990)$weight)*0.008, edge.arrow.size= E(plot_ego_1990)$weight * 0.005, edge.curved=.1)
+
+colrs <- c("tomato")
+
+VComponent1989 = rep("White", length(V(plot_ego_1989)))
+VComponent1989[c(8,5)] <- "cyan2" 
+VComponent1989[21] <- "tomato" 
+# Set node size based on audience size:
+VComponent_Size1989 = rep(2, length(V(plot_ego_1989)))
+VComponent_Size1989[21] <- 15
+VComponent_Size1989[c(5,8)] <- 10
+
+VComponent1990 = rep("White", length(V(plot_ego_1990)))
+VComponent1990[c(1,2)] <- "cyan2" 
+VComponent1990[5] <- "tomato" 
+# Set node size based on audience size:
+VComponent_Size1990 = rep(2, length(V(plot_ego_1990)))
+VComponent_Size1990[5] <- 15
+VComponent_Size1990[c(1,2)] <- 10
+
+Vcomponent_Lable1990 = V(plot_ego_1990) %>% as.matrix()
+Vcomponent_Lable1990[5] <- "USA"
+
